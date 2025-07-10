@@ -1,73 +1,33 @@
-# pylint: disable=import-outside-toplevel
-# pylint: disable=line-too-long
-# flake8: noqa
-"""
-Escriba el codigo que ejecute la accion solicitada en cada pregunta.
-"""
+import os
+import zipfile
+import pandas as pd
 
+def unzip_file(src_zip: str, dest_folder: str) -> None:
+    with zipfile.ZipFile(src_zip, "r") as archive:
+        archive.extractall(dest_folder)
+
+def create_dataframe(root_dir: str, dataset_type: str) -> pd.DataFrame:
+    records = []
+    labels = ["negative", "positive", "neutral"]
+    for label in labels:
+        sentiment_folder = os.path.join(root_dir, dataset_type, label)
+        for doc in os.listdir(sentiment_folder):
+            doc_path = os.path.join(sentiment_folder, doc)
+            with open(doc_path, encoding="utf-8") as file:
+                text = file.read()
+                records.append({"phrase": text, "target": label})
+    return pd.DataFrame(records)
 
 def pregunta_01():
-    """
-    La información requerida para este laboratio esta almacenada en el
-    archivo "files/input.zip" ubicado en la carpeta raíz.
-    Descomprima este archivo.
+    archive_path = "files/input.zip"
+    extract_folder = "files"
+    input_folder = os.path.join(extract_folder, "input")
+    output_folder = os.path.join(extract_folder, "output")
+    os.makedirs(output_folder, exist_ok=True)
 
-    Como resultado se creara la carpeta "input" en la raiz del
-    repositorio, la cual contiene la siguiente estructura de archivos:
+    unzip_file(archive_path, extract_folder)
 
-
-    ```
-    train/
-        negative/
-            0000.txt
-            0001.txt
-            ...
-        positive/
-            0000.txt
-            0001.txt
-            ...
-        neutral/
-            0000.txt
-            0001.txt
-            ...
-    test/
-        negative/
-            0000.txt
-            0001.txt
-            ...
-        positive/
-            0000.txt
-            0001.txt
-            ...
-        neutral/
-            0000.txt
-            0001.txt
-            ...
-    ```
-
-    A partir de esta informacion escriba el código que permita generar
-    dos archivos llamados "train_dataset.csv" y "test_dataset.csv". Estos
-    archivos deben estar ubicados en la carpeta "output" ubicada en la raiz
-    del repositorio.
-
-    Estos archivos deben tener la siguiente estructura:
-
-    * phrase: Texto de la frase. hay una frase por cada archivo de texto.
-    * sentiment: Sentimiento de la frase. Puede ser "positive", "negative"
-      o "neutral". Este corresponde al nombre del directorio donde se
-      encuentra ubicado el archivo.
-
-    Cada archivo tendria una estructura similar a la siguiente:
-
-    ```
-    |    | phrase                                                                                                                                                                 | target   |
-    |---:|:-----------------------------------------------------------------------------------------------------------------------------------------------------------------------|:---------|
-    |  0 | Cardona slowed her vehicle , turned around and returned to the intersection , where she called 911                                                                     | neutral  |
-    |  1 | Market data and analytics are derived from primary and secondary research                                                                                              | neutral  |
-    |  2 | Exel is headquartered in Mantyharju in Finland                                                                                                                         | neutral  |
-    |  3 | Both operating profit and net sales for the three-month period increased , respectively from EUR16 .0 m and EUR139m , as compared to the corresponding quarter in 2006 | positive |
-    |  4 | Tampere Science Parks is a Finnish company that owns , leases and builds office properties and it specialises in facilities for technology-oriented businesses         | neutral  |
-    ```
-
-
-    """
+    for partition in ["test", "train"]:
+        dataset = create_dataframe(input_folder, partition)
+        output_file = os.path.join(output_folder, f"{partition}_dataset.csv")
+        dataset.to_csv(output_file, index=False)
